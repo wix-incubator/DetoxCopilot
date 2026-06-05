@@ -7,6 +7,7 @@ export {
   Config,
   CacheOptions,
   PilotOptions,
+  RetryOptions,
   PromptHandler,
   TestingFrameworkDriver,
   TestingFrameworkAPICatalog,

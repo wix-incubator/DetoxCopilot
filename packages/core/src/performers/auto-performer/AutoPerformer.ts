@@ -242,6 +242,7 @@ export class AutoPerformer {
   async perform(
     goal: string,
     reviewSectionTypes?: AutoReviewSectionConfig[],
+    maxAttempts?: number,
   ): Promise<AutoReport> {
     const maxSteps = 100;
     const previousSteps: AutoPreviousStep[] = [];
@@ -273,6 +274,7 @@ export class AutoPerformer {
         [...previousSteps],
         screenCaptureWithoutHighlight,
         reviewSectionTypes ? reviewSectionTypes : undefined,
+        maxAttempts,
       );
 
       if (stepReport.goalAchieved) {

@@ -540,7 +540,11 @@ describe("Pilot Integration Tests", () => {
       const result = await pilot.autopilot(goal);
 
       expect(spyPilotPerformerPerform).toHaveBeenCalledTimes(1);
-      expect(spyPilotPerformerPerform).toHaveBeenCalledWith(goal, undefined);
+      expect(spyPilotPerformerPerform).toHaveBeenCalledWith(
+        goal,
+        undefined,
+        undefined,
+      );
       expect(result).toEqual(mockPilotReport);
     });
 
@@ -555,7 +559,11 @@ describe("Pilot Integration Tests", () => {
       await expect(pilot.autopilot(goal)).rejects.toThrow(errorMessage);
 
       expect(spyPilotPerformerPerform).toHaveBeenCalledTimes(1);
-      expect(spyPilotPerformerPerform).toHaveBeenCalledWith(goal, undefined);
+      expect(spyPilotPerformerPerform).toHaveBeenCalledWith(
+        goal,
+        undefined,
+        undefined,
+      );
     });
   });
 

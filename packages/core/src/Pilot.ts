@@ -1,6 +1,7 @@
 import {
   Config,
   PreviousStep,
+  RetryOptions,
   ScreenCapturerResult,
   TestingFrameworkAPICatalogCategory,
   AutoReviewSectionConfig,
@@ -48,6 +49,7 @@ export class Pilot {
   private screenCapturer: ScreenCapturer;
   private snapshotComparator: SnapshotComparator;
   private testContext: TestContext;
+  private retryOptions?: RetryOptions;
 
   constructor(config: Config) {
     // Create test context with defaults handled internally
@@ -73,6 +75,10 @@ export class Pilot {
       this.snapshotComparator,
       this.testContext,
       config.options?.cacheOptions,
+    );
+
+    this.retryOptions = Pilot.validateRetryOptions(
+      config.options?.retryOptions,
     );
     this.stepPerformerPromptCreator = new StepPerformerPromptCreator(
       config.frameworkDriver.apiCatalog,
@@ -106,6 +112,33 @@ export class Pilot {
       this.cacheHandler,
       this.snapshotComparator,
     );
+  }
+
+  /**
+   * Validates user-supplied retry options. Returns the input unchanged when
+   * valid, or throws if any value is not a positive integer.
+   */
+  private static validateRetryOptions(
+    retryOptions: RetryOptions | undefined,
+  ): RetryOptions | undefined {
+    if (!retryOptions) return retryOptions;
+
+    const assertPositiveInt = (name: string, value: number | undefined) => {
+      if (value === undefined) return;
+      if (!Number.isInteger(value) || value < 1) {
+        throw new PilotError(
+          `retryOptions.${name} must be a positive integer (>= 1), got: ${value}`,
+        );
+      }
+    };
+
+    assertPositiveInt("stepMaxAttempts", retryOptions.stepMaxAttempts);
+    assertPositiveInt(
+      "autopilotMaxAttempts",
+      retryOptions.autopilotMaxAttempts,
+    );
+
+    return retryOptions;
   }
 
   /**
@@ -205,6 +238,7 @@ export class Pilot {
       step,
       this.previousSteps,
       screenCapture,
+      this.retryOptions?.stepMaxAttempts,
     );
 
     this.didPerformStep(step, code, result);
@@ -234,7 +268,11 @@ export class Pilot {
   ): Promise<AutoReport> {
     this.loadCache();
     this.assertIsRunning();
-    return await this.autoPerformer.perform(goal, reviewConfigs);
+    return await this.autoPerformer.perform(
+      goal,
+      reviewConfigs,
+      this.retryOptions?.autopilotMaxAttempts,
+    );
   }
 
   /**
