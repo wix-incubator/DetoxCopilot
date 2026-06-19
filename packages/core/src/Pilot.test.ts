@@ -91,6 +91,7 @@ describe("Pilot", () => {
         INTENT,
         [],
         screenCapture,
+        undefined,
       );
     });
 
@@ -120,6 +121,7 @@ describe("Pilot", () => {
           },
         ],
         screenCapture,
+        undefined,
       );
     });
 
@@ -136,6 +138,7 @@ describe("Pilot", () => {
         intent1,
         [],
         screenCapture,
+        undefined,
       );
       expect(StepPerformer.prototype.perform).toHaveBeenNthCalledWith(
         2,
@@ -148,6 +151,7 @@ describe("Pilot", () => {
           },
         ],
         screenCapture,
+        undefined,
       );
     });
   });
@@ -167,6 +171,7 @@ describe("Pilot", () => {
         intent2,
         [],
         screenCapture,
+        undefined,
       );
     });
   });
@@ -306,6 +311,7 @@ describe("Pilot", () => {
       expect(pilot["autoPerformer"].perform).toHaveBeenCalledWith(
         goal,
         undefined,
+        undefined,
       );
       expect(pilotResult).toEqual(mockPilotResult);
     });
@@ -383,8 +389,89 @@ describe("Pilot", () => {
       expect(pilot["autoPerformer"].perform).toHaveBeenCalledWith(
         goal,
         undefined,
+        undefined,
       );
       expect(result).toEqual(expectedResult);
     });
+  });
+
+  describe("retryOptions", () => {
+    it("should forward stepMaxAttempts to StepPerformer.perform", async () => {
+      const pilotWithRetries = new Pilot({
+        ...mockConfig,
+        options: { retryOptions: { stepMaxAttempts: 5 } },
+      });
+
+      pilotWithRetries.start();
+      await pilotWithRetries.perform(INTENT);
+
+      expect(StepPerformer.prototype.perform).toHaveBeenCalledWith(
+        INTENT,
+        [],
+        screenCapture,
+        5,
+      );
+    });
+
+    it("should forward autopilotMaxAttempts to AutoPerformer.perform", async () => {
+      const pilotWithRetries = new Pilot({
+        ...mockConfig,
+        options: { retryOptions: { autopilotMaxAttempts: 4 } },
+      });
+
+      pilotWithRetries.start();
+      mockPilotPerformer.perform.mockResolvedValue({ goal: "g", steps: [] });
+      await pilotWithRetries.autopilot("g");
+
+      expect(pilotWithRetries["autoPerformer"].perform).toHaveBeenCalledWith(
+        "g",
+        undefined,
+        4,
+      );
+    });
+
+    it("should allow configuring both step and autopilot attempts independently", async () => {
+      const pilotWithRetries = new Pilot({
+        ...mockConfig,
+        options: {
+          retryOptions: { stepMaxAttempts: 3, autopilotMaxAttempts: 7 },
+        },
+      });
+
+      pilotWithRetries.start();
+      await pilotWithRetries.perform(INTENT);
+      mockPilotPerformer.perform.mockResolvedValue({ goal: "g", steps: [] });
+      await pilotWithRetries.autopilot("g");
+
+      expect(StepPerformer.prototype.perform).toHaveBeenCalledWith(
+        INTENT,
+        [],
+        screenCapture,
+        3,
+      );
+      expect(pilotWithRetries["autoPerformer"].perform).toHaveBeenCalledWith(
+        "g",
+        undefined,
+        7,
+      );
+    });
+
+    it.each([
+      ["stepMaxAttempts", { stepMaxAttempts: 0 }],
+      ["stepMaxAttempts", { stepMaxAttempts: -1 }],
+      ["stepMaxAttempts", { stepMaxAttempts: 1.5 }],
+      ["autopilotMaxAttempts", { autopilotMaxAttempts: 0 }],
+      ["autopilotMaxAttempts", { autopilotMaxAttempts: -3 }],
+      ["autopilotMaxAttempts", { autopilotMaxAttempts: 2.5 }],
+    ])(
+      "should reject invalid %s values at construction time",
+      (field, retryOptions) => {
+        expect(
+          () => new Pilot({ ...mockConfig, options: { retryOptions } }),
+        ).toThrowError(
+          new RegExp(`retryOptions\\.${field} must be a positive integer`),
+        );
+      },
+    );
   });
 });

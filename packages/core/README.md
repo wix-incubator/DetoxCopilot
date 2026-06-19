@@ -56,6 +56,30 @@ Autopilot uses an agentic approach to perform goal-based automation flows.
 await pilot.autopilot('Register with a new account');
 ```
 
+## Configuring Retries
+
+Pilot retries individual operations when the LLM produces unusable code or
+when screen analysis fails. The default of 2 attempts is fine for most
+flows, but complex, dynamic screens may benefit from a higher value.
+
+```typescript
+const pilot = new Pilot({
+  frameworkDriver: new DetoxFrameworkDriver(),
+  promptHandler: new CustomPromptHandler(),
+  options: {
+    retryOptions: {
+      // Max attempts per step in pilot.perform(...). Default: 2.
+      stepMaxAttempts: 4,
+      // Max attempts per screen analysis in pilot.autopilot(...). Default: 2.
+      autopilotMaxAttempts: 4,
+    },
+  },
+});
+```
+
+Both values must be positive integers (`>= 1`); invalid values throw at
+construction time.
+
 ## Related Packages
 
 - [@wix-pilot/puppeteer](../drivers/puppeteer) - Puppeteer driver for web testing

@@ -22,6 +22,8 @@ export interface TestContextConfig {
 export interface PilotOptions {
   /** Cache options */
   cacheOptions?: CacheOptions;
+  /** Retry options for steps and autopilot screen analysis */
+  retryOptions?: RetryOptions;
 }
 
 export interface CacheOptions {
@@ -29,6 +31,27 @@ export interface CacheOptions {
   shouldUseCache?: boolean;
   /** If true, cache will be updated with new data (default: false) */
   shouldOverrideCache?: boolean;
+}
+
+/**
+ * Retry configuration for Pilot's internal retry loops.
+ *
+ * Pilot retries individual operations when the LLM produces code that
+ * fails to evaluate, or when screen analysis produces an unusable plan.
+ * For complex screens it can be useful to allow more than the default
+ * of 2 attempts.
+ */
+export interface RetryOptions {
+  /**
+   * Maximum number of attempts the step performer will make for each
+   * step passed to `pilot.perform(...)`. Must be >= 1. Default: 2.
+   */
+  stepMaxAttempts?: number;
+  /**
+   * Maximum number of attempts the autopilot will make when analysing
+   * a screen and producing the next plan step. Must be >= 1. Default: 2.
+   */
+  autopilotMaxAttempts?: number;
 }
 
 /**
